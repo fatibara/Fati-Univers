@@ -1,0 +1,17 @@
+{
+  "name": "fati-univers",
+  "private": true,
+  "description": "FATI UNIVERS — plateforme de gestion scolaire multi-établissements (une solution FATIGLOBAL)",
+  "engines": { "node": ">=20.18" },
+  "scripts": {
+    "install:all": "npm install --prefix apps/api && npm install --prefix apps/web",
+    "dev:api": "npm run dev --prefix apps/api",
+    "dev:web": "npm run dev --prefix apps/web",
+    "build": "npm run build --prefix apps/api && npm run build --prefix apps/web",
+    "test": "npm test --prefix apps/api",
+    "test:e2e": "npm run test:e2e --prefix apps/api",
+    "check:schema": "python3 scripts/check_schema.py",
+    "test:db": "bash scripts/test-db.sh",
+    "build:install-sql": "python3 scripts/build_install_sql.py"
+  }
+}
