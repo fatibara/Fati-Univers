@@ -5,7 +5,7 @@
   "description": "API FATI UNIVERS (NestJS). Déployable telle quelle sur Vercel (Root Directory : apps/api).",
   "engines": { "node": ">=20.18" },
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && node prisma/auto-install.mjs",
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
