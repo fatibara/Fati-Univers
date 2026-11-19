@@ -3,6 +3,16 @@
 -- puis réapplique la sécurité (couvre automatiquement les nouvelles tables).
 DO $fati_install$
 BEGIN
+  -- Garde-fou : ne jamais toucher une base qui appartient à une autre application.
+  IF to_regclass('public."Tenant"') IS NULL
+     AND EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') THEN
+    RAISE EXCEPTION 'FATI UNIVERS : cette base contient deja des tables d''une autre application. Installation refusee. Branchez une base Neon vide dediee a FATI UNIVERS.';
+  END IF;
+  IF to_regclass('public."Tenant"') IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'Tenant' AND column_name = 'shortName') THEN
+    RAISE EXCEPTION 'FATI UNIVERS : la table Tenant existante ne correspond pas a FATI UNIVERS. Installation refusee. Branchez une base Neon dediee.';
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fati_app') THEN
     CREATE ROLE fati_app LOGIN NOSUPERUSER NOBYPASSRLS;
   END IF;
