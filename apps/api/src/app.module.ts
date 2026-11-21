@@ -7,6 +7,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 import { ENV, loadEnv } from './config/env';
 import { HealthController } from './health/health.controller';
+import { SuperAdminBootstrap } from './platform/super-admin.bootstrap';
 import { PrismaService } from './prisma/prisma.service';
 import { StudentsController } from './students/students.controller';
 import { StudentsService } from './students/students.service';
@@ -34,6 +35,7 @@ class CoreModule {}
     PlatformService,
     MembersService,
     SuperAdminGuard,
+    SuperAdminBootstrap,
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
     // Ordre d'exécution : limitation de débit -> connexion -> école active -> permissions
     { provide: APP_GUARD, useClass: ThrottlerGuard },

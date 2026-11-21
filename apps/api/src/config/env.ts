@@ -17,6 +17,9 @@ const EnvSchema = z.object({
   // Adresse d'expédition Orange pour la Guinée (à confirmer dans votre espace developer.orange.com)
   ORANGE_SMS_SENDER: z.string().default('tel:+2240000'),
   ORANGE_SMS_SENDER_NAME: z.string().optional(),
+  // Compte super-administrateur FATI (créé / corrigé au démarrage de l'API)
+  FATI_SUPERADMIN_PHONE: z.string().trim().optional(),
+  FATI_SUPERADMIN_PASSWORD: z.string().trim().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
