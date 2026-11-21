@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, chooseSchool, clearSession, currentSchoolId, type School } from '@/lib/api';
 
 interface Me {
-  user: { firstName: string; lastName: string };
+  user: { firstName: string; lastName: string; isSuperAdmin: boolean };
   schools: School[];
 }
 interface StudentRow {
@@ -40,7 +40,7 @@ export default function TableauDeBordPage() {
       .then((data) => {
         setMe(data);
         const saved = currentSchoolId();
-        const only = data.schools.length === 1 ? data.schools[0]!.id : null;
+        const only = data.schools.length === 1 && !data.user.isSuperAdmin ? data.schools[0]!.id : null;
         const pick = data.schools.some((s) => s.id === saved) ? saved : only;
         if (pick) {
           chooseSchool(pick);
@@ -69,7 +69,16 @@ export default function TableauDeBordPage() {
         <h1>Bonjour {me.user.firstName}</h1>
         <div className="carte">
           <h2 style={{ marginTop: 0, fontSize: 18 }}>Choisissez votre établissement</h2>
-          {me.schools.length === 0 && <p className="discret">Aucun établissement n&apos;est associé à votre compte.</p>}
+          {me.schools.length === 0 && !me.user.isSuperAdmin && <p className="discret">Aucun établissement n&apos;est associé à votre compte.</p>}
+          {me.user.isSuperAdmin && (
+            <div className="ecole">
+              <div>
+                <strong>Administration FATI UNIVERS</strong>
+                <div className="discret">Créer et gérer les écoles abonnées</div>
+              </div>
+              <a className="bouton secondaire" href="/admin">Ouvrir</a>
+            </div>
+          )}
           {me.schools.map((s) => (
             <div className="ecole" key={s.id}>
               <div>
@@ -96,7 +105,11 @@ export default function TableauDeBordPage() {
             <small>FATI UNIVERS · {me.user.firstName} {me.user.lastName}</small>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {school.roles.some((r) => r === 'DIRECTEUR' || r === 'PROMOTEUR') && (
+            <a className="bouton secondaire" href="/comptes">Comptes</a>
+          )}
+          {me.user.isSuperAdmin && <a className="bouton secondaire" href="/admin">Administration</a>}
           {me.schools.length > 1 && (
             <button className="bouton secondaire" onClick={() => setSchoolId(null)}>Changer d&apos;école</button>
           )}

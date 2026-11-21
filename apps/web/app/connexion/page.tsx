@@ -71,7 +71,7 @@ export default function ConnexionPage() {
         </button>
       </form>
       <p className="discret" style={{ textAlign: 'center', marginTop: 16 }}>
-        Mot de passe oublié ? Contactez la direction de votre établissement.
+        Première connexion ou mot de passe oublié ? <a href="/activer">Activer mon compte avec un code SMS</a>
       </p>
       <InstallerApp />
       <p className="discret" style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>

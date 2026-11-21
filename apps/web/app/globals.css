@@ -44,3 +44,11 @@ th { color: var(--gris); font-weight: 600; }
 .discret { color: var(--gris); font-size: 14px; }
 .ecole { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--ligne); }
 .ecole:last-child { border-bottom: 0; }
+.succes { background: #ecfdf3; color: #05603a; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 14px; }
+.alerte { background: #fff8e6; color: #4a3600; border: 1px solid #f2d27a; border-radius: 8px; padding: 12px 14px; font-size: 14px; line-height: 1.6; }
+.lien { background: none; border: 0; padding: 4px 0; color: var(--vert); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; text-align: left; }
+.pastille { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.pastille.ok { background: #e3f0ea; color: #0a5a40; }
+.pastille.ko { background: #fdecea; color: #8f1c13; }
+.pastille.attente { background: #fff4d6; color: #6b4e00; }
+a.bouton.secondaire { text-decoration: none; }
