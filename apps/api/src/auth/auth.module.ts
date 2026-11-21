@@ -4,6 +4,7 @@ import { ENV, type Env } from '../config/env';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { OtpService } from './otp.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [JwtModule, JwtAuthGuard],
+  providers: [AuthService, JwtAuthGuard, OtpService],
+  exports: [JwtModule, JwtAuthGuard, OtpService],
 })
 export class AuthModule {}

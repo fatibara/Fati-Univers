@@ -71,3 +71,15 @@ export function reportCardSms(p: {
 export function otpSms(code: string): string {
   return fit(`FATI UNIVERS: votre code de connexion est ${code}. Il expire dans 10 minutes. Ne le partagez avec personne.`);
 }
+
+export function activationSms(p: { school: string; code: string }): string {
+  return fit(
+    // Le code vient en premier : même tronqué, le message reste utilisable.
+    `FATI UNIVERS : votre code d'activation est ${p.code} (valable 7 jours). Compte cree par ${p.school}. ` +
+      `Choisissez votre mot de passe dans l'application.`,
+  );
+}
+
+export function resetCodeSms(code: string): string {
+  return fit(`FATI UNIVERS : code pour changer votre mot de passe : ${code}. Valable 15 minutes. Ne le partagez pas.`);
+}

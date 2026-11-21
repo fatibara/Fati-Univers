@@ -10,6 +10,13 @@ const EnvSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET doit faire au moins 32 caractères'),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  // SMS : "simulation" (par défaut, rien n'est envoyé) ou "orange" (API SMS Orange Guinée)
+  SMS_PROVIDER: z.enum(['simulation', 'orange']).default('simulation'),
+  ORANGE_SMS_CLIENT_ID: z.string().optional(),
+  ORANGE_SMS_CLIENT_SECRET: z.string().optional(),
+  // Adresse d'expédition Orange pour la Guinée (à confirmer dans votre espace developer.orange.com)
+  ORANGE_SMS_SENDER: z.string().default('tel:+2240000'),
+  ORANGE_SMS_SENDER_NAME: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

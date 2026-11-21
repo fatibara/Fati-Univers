@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, NoTenant, Public } from '../common/decorators';
 import type { AuthUser, FatiRequest } from '../common/request';
 import { LoginDto, RefreshDto } from './auth.dto';
+import { ActivateDto, RequestCodeDto } from './activation.dto';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -15,6 +16,22 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() dto: LoginDto, @Req() req: FatiRequest) {
     return this.auth.login(dto.phone, dto.password, { ip: req.ip, userAgent: req.headers['user-agent'] });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('activate')
+  @HttpCode(200)
+  activate(@Body() dto: ActivateDto, @Req() req: FatiRequest) {
+    return this.auth.activate(dto.phone, dto.code, dto.password, { ip: req.ip, userAgent: req.headers['user-agent'] });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('request-code')
+  @HttpCode(200)
+  requestCode(@Body() dto: RequestCodeDto) {
+    return this.auth.requestCode(dto.phone);
   }
 
   @Public()

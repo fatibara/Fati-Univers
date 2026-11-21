@@ -2,10 +2,12 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes } from 'node:crypto';
 import { forUser } from '../database';
-import { isValidGuineaPhone, normalizeGuineaPhone } from '../domain';
+import { isValidGuineaPhone, normalizeGuineaPhone, resetCodeSms } from '../domain';
 import { ENV, type Env } from '../config/env';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword, verifyPassword } from './password';
+import { OtpService } from './otp.service';
+import { SmsService } from '../sms/sms.service';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -28,7 +30,43 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     @Inject(ENV) private readonly env: Env,
+    private readonly otp: OtpService,
+    private readonly sms: SmsService,
   ) {}
+
+  /**
+   * Première connexion ou mot de passe oublié : le code reçu par SMS permet de
+   * choisir un mot de passe, puis connecte directement.
+   */
+  async activate(phoneInput: string, code: string, password: string, meta: { ip?: string; userAgent?: string }): Promise<Tokens> {
+    const invalid = new UnauthorizedException('Code incorrect ou expiré. Demandez un nouveau code.');
+    if (!isValidGuineaPhone(phoneInput)) throw invalid;
+    const phone = normalizeGuineaPhone(phoneInput);
+    const user = await this.prisma.app.user.findUnique({ where: { phone } });
+    if (!user) throw invalid;
+    const ok = await this.otp.verify(phone, ['ACTIVATION', 'RESET_PASSWORD'], code);
+    if (!ok) throw invalid;
+    await this.prisma.app.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(password), failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
+    });
+    // Un nouveau mot de passe ferme toutes les autres sessions.
+    await this.prisma.app.userSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    return this.issueTokens(user.id, user.isSuperAdmin, meta);
+  }
+
+  /** Mot de passe oublié. Répond toujours la même chose, que le numéro existe ou non. */
+  async requestCode(phoneInput: string): Promise<{ message: string }> {
+    const message = 'Si ce numéro a un compte, un code vient de lui être envoyé par SMS.';
+    if (!isValidGuineaPhone(phoneInput)) return { message };
+    const phone = normalizeGuineaPhone(phoneInput);
+    const user = await this.prisma.app.user.findUnique({ where: { phone } });
+    if (!user) return { message };
+    const membership = await this.prisma.platform.membership.findFirst({ where: { userId: user.id }, select: { tenantId: true } });
+    const code = await this.otp.issue(phone, 'RESET_PASSWORD');
+    await this.sms.send({ tenantId: membership?.tenantId ?? null, to: phone, body: resetCodeSms(code), purpose: 'OTP' });
+    return { message };
+  }
 
   async login(phoneInput: string, password: string, meta: { ip?: string; userAgent?: string }): Promise<Tokens> {
     if (!isValidGuineaPhone(phoneInput)) {
