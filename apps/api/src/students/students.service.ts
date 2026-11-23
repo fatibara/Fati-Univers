@@ -1,12 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma, TenantPrisma } from '../database';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { withTenantTransaction, type Prisma, type TenantPrisma } from '../database';
+import { PrismaService } from '../prisma/prisma.service';
+import { currentYear, requireCurrentYear } from '../school/school';
 import { AuditService } from '../audit/audit.service';
 import type { TenantInfo } from '../common/request';
-import type { CreateStudentDto, ListStudentsQuery } from './students.dto';
+import type { CreateStudentDto, EnrollDto, ListStudentsQuery } from './students.dto';
 
 @Injectable()
 export class StudentsService {
-  constructor(private readonly audit: AuditService) {}
+  constructor(
+    private readonly audit: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async list(db: TenantPrisma, q: ListStudentsQuery) {
     const where: Prisma.StudentWhereInput = {
@@ -61,23 +66,76 @@ export class StudentsService {
   }
 
   async create(db: TenantPrisma, tenant: TenantInfo, userId: string, dto: CreateStudentDto) {
-    const student = await db.student.create({
-      data: {
-        tenantId: tenant.tenantId,
-        matricule: dto.matricule.trim(),
-        firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim().toUpperCase(),
-        gender: dto.gender,
-        birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
-        birthPlace: dto.birthPlace?.trim(),
-      },
+    const year = await currentYear(db);
+    if (dto.classroomId) {
+      const classroom = await db.classroom.findFirst({ where: { id: dto.classroomId, academicYearId: year?.id ?? '' }, select: { id: true } });
+      if (!year || !classroom) throw new BadRequestException("Classe introuvable dans l'année en cours");
+    }
+    const ctx = { tenantId: tenant.tenantId, userId };
+    return withTenantTransaction(this.prisma.app, ctx, async (tx) => {
+      let matricule = dto.matricule?.trim();
+      if (!matricule) {
+        const prefix = (year?.label ?? new Date().getUTCFullYear().toString()).slice(0, 4);
+        const count = await tx.student.count({ where: { matricule: { startsWith: `${prefix}-` } } });
+        let n = count + 1;
+        // Recherche du prochain numéro libre (au cas où des matricules ont été saisis à la main).
+        while (await tx.student.findFirst({ where: { matricule: `${prefix}-${String(n).padStart(4, '0')}` }, select: { id: true } })) n++;
+        matricule = `${prefix}-${String(n).padStart(4, '0')}`;
+      } else if (await tx.student.findFirst({ where: { matricule }, select: { id: true } })) {
+        throw new ConflictException(`Le matricule ${matricule} est déjà utilisé`);
+      }
+      const student = await tx.student.create({
+        data: {
+          tenantId: tenant.tenantId,
+          matricule,
+          firstName: dto.firstName.trim(),
+          lastName: dto.lastName.trim().toUpperCase(),
+          gender: dto.gender,
+          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+          birthPlace: dto.birthPlace?.trim(),
+        },
+      });
+      if (dto.classroomId && year) {
+        await tx.enrollment.create({
+          data: {
+            tenantId: tenant.tenantId,
+            studentId: student.id,
+            classroomId: dto.classroomId,
+            academicYearId: year.id,
+            status: 'INSCRIT',
+          },
+        });
+      }
+      await this.audit.logInTx(tx, ctx, {
+        action: 'STUDENT_CREATED',
+        entity: 'Student',
+        entityId: student.id,
+        after: { matricule: student.matricule, firstName: student.firstName, lastName: student.lastName, classroomId: dto.classroomId ?? null },
+      });
+      return student;
+    });
+  }
+
+  /** Inscrit l'élève dans une classe de l'année en cours (ou le change de classe). */
+  async enroll(db: TenantPrisma, tenant: TenantInfo, userId: string, studentId: string, dto: EnrollDto) {
+    const year = await requireCurrentYear(db);
+    const [student, classroom] = await Promise.all([
+      db.student.findFirst({ where: { id: studentId, archivedAt: null }, select: { id: true } }),
+      db.classroom.findFirst({ where: { id: dto.classroomId, academicYearId: year.id }, select: { id: true, name: true } }),
+    ]);
+    if (!student) throw new NotFoundException('Élève introuvable');
+    if (!classroom) throw new BadRequestException("Classe introuvable dans l'année en cours");
+    const enrollment = await db.enrollment.upsert({
+      where: { tenantId_studentId_academicYearId: { tenantId: tenant.tenantId, studentId, academicYearId: year.id } },
+      update: { classroomId: classroom.id, status: 'INSCRIT' },
+      create: { tenantId: tenant.tenantId, studentId, classroomId: classroom.id, academicYearId: year.id, status: 'INSCRIT' },
     });
     await this.audit.log(db, { tenantId: tenant.tenantId, userId }, {
-      action: 'STUDENT_CREATED',
-      entity: 'Student',
-      entityId: student.id,
-      after: { matricule: student.matricule, firstName: student.firstName, lastName: student.lastName },
+      action: 'STUDENT_ENROLLED',
+      entity: 'Enrollment',
+      entityId: enrollment.id,
+      after: { studentId, classroom: classroom.name },
     });
-    return student;
+    return { enrolled: true, classroom: classroom.name };
   }
 }

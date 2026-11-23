@@ -5,6 +5,8 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(4000),
   API_CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  // Adresse publique du site (redirection depuis l'adresse de l'API)
+  WEB_URL: z.string().url().default('https://web-navy-psi-73.vercel.app'),
   DATABASE_URL_APP: z.string().url(),
   DATABASE_URL_PLATFORM: z.string().url(),
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET doit faire au moins 32 caractères'),

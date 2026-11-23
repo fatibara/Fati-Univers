@@ -10,7 +10,7 @@
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test test/domain.test.ts test/password.test.ts test/database-url.test.ts",
+    "test": "tsx --test test/domain.test.ts test/password.test.ts test/database-url.test.ts test/otp-sms.test.ts test/school.test.ts",
     "test:e2e": "jest --config test/jest-e2e.json --runInBand",
     "db:push": "prisma db push --skip-generate",
     "db:secure": "node prisma/apply-security.mjs",

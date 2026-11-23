@@ -50,6 +50,8 @@ export const PERMISSIONS = [
   'audit.read',
   'child.read', // parent : ses enfants liés uniquement
   'self.read', // élève : son propre dossier
+  'announcements.read', // tout membre de l'école
+  'teaching.access', // espace « appel et notes » (le détail est vérifié classe par classe)
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -72,9 +74,10 @@ const DIRECTION: Permission[] = [
   'payments.cancel.approve',
   'announcements.send',
   'audit.read',
+  'teaching.access',
 ];
 
-export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
+const BASE_ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   PROMOTEUR: DIRECTION,
   DIRECTEUR: DIRECTION,
   CENSEUR: [
@@ -86,12 +89,13 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'grades.read.all',
     'discipline.write',
     'announcements.send',
+    'teaching.access',
   ],
   SECRETAIRE: ['students.read', 'students.write', 'enrollments.write', 'imports.run', 'timetable.read.own'],
   COMPTABLE: ['students.read', 'finance.read', 'finance.fees.manage', 'cash.collect', 'cash.close', 'payments.cancel.request'],
   CAISSIER: ['students.read', 'cash.collect', 'cash.close', 'payments.cancel.request'],
-  ENSEIGNANT: ['timetable.read.own', 'attendance.take', 'grades.write.own'],
-  SURVEILLANT: ['students.read', 'attendance.manage', 'discipline.write'],
+  ENSEIGNANT: ['timetable.read.own', 'attendance.take', 'grades.write.own', 'teaching.access'],
+  SURVEILLANT: ['students.read', 'attendance.manage', 'discipline.write', 'teaching.access'],
   PARENT: ['child.read'],
   ELEVE: ['self.read', 'timetable.read.own'],
   BIBLIOTHECAIRE: ['students.read'],
@@ -99,6 +103,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   RESPONSABLE_CANTINE: ['students.read'],
   RESPONSABLE_INTERNAT: ['students.read'],
 };
+
+/** Chaque rôle reçoit aussi les permissions communes à tous les membres. */
+const COMMON: Permission[] = ['announcements.read'];
+export const ROLE_PERMISSIONS = Object.fromEntries(
+  (Object.entries(BASE_ROLE_PERMISSIONS) as [Role, readonly Permission[]][]).map(([r, p]) => [r, [...p, ...COMMON]]),
+) as unknown as Record<Role, readonly Permission[]>;
 
 /** Permissions cumulées d'une personne qui a plusieurs rôles dans une école. */
 export function permissionsOf(roles: readonly Role[]): Set<Permission> {

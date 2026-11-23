@@ -27,9 +27,16 @@ export class ListStudentsQuery {
 
 /** Création d'un élève. Pas de tenantId ici : l'école vient TOUJOURS du contexte serveur. */
 export class CreateStudentDto {
+  /** Facultatif : généré automatiquement (ex. 2026-0042) s'il est vide. */
+  @IsOptional()
   @IsString()
   @Length(1, 30)
-  matricule: string;
+  matricule?: string;
+
+  /** Classe de l'année en cours où inscrire l'élève. */
+  @IsOptional()
+  @IsUUID()
+  classroomId?: string;
 
   @IsString()
   @Length(1, 80)
@@ -50,4 +57,9 @@ export class CreateStudentDto {
   @IsString()
   @Length(1, 120)
   birthPlace?: string;
+}
+
+export class EnrollDto {
+  @IsUUID()
+  classroomId: string;
 }

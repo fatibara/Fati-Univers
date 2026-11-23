@@ -8,6 +8,14 @@ import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 import { ENV, loadEnv } from './config/env';
 import { HealthController } from './health/health.controller';
 import { SuperAdminBootstrap } from './platform/super-admin.bootstrap';
+import { StructureController } from './structure/structure.controller';
+import { StructureService } from './structure/structure.service';
+import { TeachingController } from './teaching/teaching.controller';
+import { TeachingService } from './teaching/teaching.service';
+import { ParentController } from './parent/parent.controller';
+import { ParentService } from './parent/parent.service';
+import { AnnouncementsController, AnnouncementsService } from './announcements/announcements';
+import { DashboardController, DashboardService } from './dashboard/dashboard';
 import { PrismaService } from './prisma/prisma.service';
 import { StudentsController } from './students/students.controller';
 import { StudentsService } from './students/students.service';
@@ -29,13 +37,28 @@ class CoreModule {}
 
 @Module({
   imports: [CoreModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]), AuthModule],
-  controllers: [HealthController, StudentsController, PlatformController, MembersController],
+  controllers: [
+    HealthController,
+    StudentsController,
+    PlatformController,
+    MembersController,
+    StructureController,
+    TeachingController,
+    ParentController,
+    AnnouncementsController,
+    DashboardController,
+  ],
   providers: [
     StudentsService,
     PlatformService,
     MembersService,
     SuperAdminGuard,
     SuperAdminBootstrap,
+    StructureService,
+    TeachingService,
+    ParentService,
+    AnnouncementsService,
+    DashboardService,
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
     // Ordre d'exécution : limitation de débit -> connexion -> école active -> permissions
     { provide: APP_GUARD, useClass: ThrottlerGuard },

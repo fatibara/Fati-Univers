@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestj
 import type { TenantPrisma } from '../database';
 import { CurrentTenant, CurrentUser, RequirePermission, TenantDb } from '../common/decorators';
 import type { AuthUser, TenantInfo } from '../common/request';
-import { CreateStudentDto, ListStudentsQuery } from './students.dto';
+import { CreateStudentDto, EnrollDto, ListStudentsQuery } from './students.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
@@ -30,5 +30,17 @@ export class StudentsController {
     @Body() dto: CreateStudentDto,
   ) {
     return this.students.create(db, tenant, user.id, dto);
+  }
+
+  @Post(':id/enroll')
+  @RequirePermission('enrollments.write')
+  enroll(
+    @TenantDb() db: TenantPrisma,
+    @CurrentTenant() tenant: TenantInfo,
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: EnrollDto,
+  ) {
+    return this.students.enroll(db, tenant, user.id, id, dto);
   }
 }
