@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { api, saveSession } from '@/lib/api';
+import { api, clearSession, saveSession } from '@/lib/api';
 
 /** Première connexion (code reçu par SMS) ou mot de passe oublié. */
 export default function ActiverPage() {
@@ -22,11 +22,12 @@ export default function ActiverPage() {
     if (password !== confirm) return setError('Les deux mots de passe ne sont pas identiques');
     setLoading(true);
     try {
-      const res = await api<{ accessToken: string }>('/auth/activate', {
+      const res = await api<{ accessToken: string; refreshToken: string }>('/auth/activate', {
         method: 'POST',
         body: JSON.stringify({ phone, code: code.replace(/\s/g, ''), password }),
       });
-      saveSession(res.accessToken);
+      clearSession();
+      saveSession(res.accessToken, res.refreshToken);
       router.push('/tableau-de-bord');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Activation impossible');

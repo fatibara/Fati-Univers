@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
-import { api, saveSession } from '@/lib/api';
+import { useEffect, useState, type FormEvent } from 'react';
+import { api, clearSession, isLoggedIn, saveSession } from '@/lib/api';
 import { InstallerApp } from '@/components/InstallerApp';
 
 export default function ConnexionPage() {
@@ -12,16 +12,22 @@ export default function ConnexionPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Déjà connecté (application installée) : on va directement à l'accueil.
+  useEffect(() => {
+    if (isLoggedIn()) router.replace('/tableau-de-bord');
+  }, [router]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await api<{ accessToken: string }>('/auth/login', {
+      const res = await api<{ accessToken: string; refreshToken: string }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ phone, password }),
       });
-      saveSession(res.accessToken);
+      clearSession();
+      saveSession(res.accessToken, res.refreshToken);
       router.push('/tableau-de-bord');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connexion impossible');

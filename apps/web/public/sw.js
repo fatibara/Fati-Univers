@@ -1,7 +1,7 @@
 // FATI UNIVERS — service worker minimal.
 // Rôle : permettre l'installation et afficher une page claire quand il n'y a pas de réseau.
 // Les données (élèves, notes, paiements) ne sont JAMAIS mises en cache ici.
-const CACHE = 'fati-univers-v1';
+const CACHE = 'fati-univers-v2';
 const OFFLINE_URL = '/hors-ligne';
 
 self.addEventListener('install', (event) => {

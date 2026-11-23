@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { api, ApiError, clearSession, currentSchoolId } from '@/lib/api';
+import { Coquille, type Session } from '@/components/Coquille';
+import { api } from '@/lib/api';
+import { DIRECTION } from '@/lib/roles';
 
 interface Member {
   id: string;
@@ -39,8 +39,7 @@ const ROLES: [string, string][] = [
 ];
 const LABEL = Object.fromEntries([...ROLES, ['PROMOTEUR', 'Promoteur']]);
 
-export default function ComptesPage() {
-  const router = useRouter();
+function Comptes({ s }: { s: Session }) {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -49,17 +48,7 @@ export default function ComptesPage() {
   const empty = { firstName: '', lastName: '', phone: '', roles: ['ENSEIGNANT'] as string[], studentIds: [] as string[], position: '' };
   const [form, setForm] = useState(empty);
 
-  const fail = useCallback(
-    (err: unknown) => {
-      if (err instanceof ApiError && err.status === 401) {
-        clearSession();
-        router.replace('/connexion');
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Erreur');
-    },
-    [router],
-  );
+  const fail = s.fail;
 
   const load = useCallback(() => {
     api<Member[]>('/members').then(setMembers).catch(fail);
@@ -67,12 +56,8 @@ export default function ComptesPage() {
   }, [fail]);
 
   useEffect(() => {
-    if (!currentSchoolId()) {
-      router.replace('/tableau-de-bord');
-      return;
-    }
     load();
-  }, [load, router]);
+  }, [load]);
 
   async function create(e: FormEvent) {
     e.preventDefault();
@@ -123,14 +108,8 @@ export default function ComptesPage() {
     setForm({ ...form, studentIds: form.studentIds.includes(id) ? form.studentIds.filter((x) => x !== id) : [...form.studentIds, id] });
 
   return (
-    <main className="page">
-      <div className="entete">
-        <div>
-          <h1 style={{ margin: 0, fontSize: 26 }}>Comptes de l’école</h1>
-          <span className="discret">Personnel et parents : chacun reçoit un code par SMS pour sa première connexion.</span>
-        </div>
-        <Link href="/tableau-de-bord" className="bouton secondaire">Retour</Link>
-      </div>
+    <>
+      <p className="discret" style={{ marginTop: -10 }}>Personnel et parents : chacun reçoit un code par SMS pour sa première connexion.</p>
 
       {error && <div className="erreur" role="alert">{error}</div>}
       {notice && (
@@ -214,6 +193,10 @@ export default function ComptesPage() {
           </table>
         </div>
       </section>
-    </main>
+    </>
   );
+}
+
+export default function ComptesPage() {
+  return <Coquille titre="Comptes de l’école" roles={DIRECTION}>{(s) => <Comptes s={s} />}</Coquille>;
 }
